@@ -248,24 +248,24 @@ def _emit_feed_result(feed_hit):
 
     mode = "phishtank_local" if feed_hit["source"] == "phishtank" else "openphish_feed"
 
-    if feed_hit["listed"]:
-
-        verdict = "DANGER"
-
-        extra = {"matched_url": feed_hit.get("matched_url")}
-
-        if feed_hit.get("detail"):
-
-            extra["result"] = feed_hit["detail"]
-
-    else:
-
+    if feed_hit.get("feed_disputed"):
         verdict = "WARNING"
-
+        extra = {
+            "matched_url": feed_hit.get("matched_url"),
+            "feed_disputed": True,
+        }
+        if feed_hit.get("detail"):
+            extra["result"] = feed_hit["detail"]
+    elif feed_hit["listed"]:
+        verdict = "DANGER"
+        extra = {"matched_url": feed_hit.get("matched_url")}
+        if feed_hit.get("detail"):
+            extra["result"] = feed_hit["detail"]
+    else:
+        verdict = "WARNING"
         extra = {}
 
     extra["related_urls"] = feed_hit.get("related_urls")
-
     extra["related_count"] = feed_hit.get("related_count", 0)
 
     return _emit_result(mode, feed_hit["listed"], verdict, feed_hit["summary"], **extra)

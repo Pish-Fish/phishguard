@@ -7,6 +7,23 @@ import time
 from urllib.parse import urlparse
 
 import requests
+import tldextract
+
+# Major domains where PhishTank sometimes lists the apex URL (tests/misreports).
+TRUSTED_APEX_DOMAINS = frozenset({
+    "google.com", "youtube.com", "gmail.com", "google.co.uk",
+    "microsoft.com", "live.com", "outlook.com", "office.com", "bing.com",
+    "apple.com", "icloud.com", "amazon.com", "facebook.com", "instagram.com",
+    "meta.com", "whatsapp.com", "twitter.com", "x.com", "linkedin.com",
+    "github.com", "paypal.com", "netflix.com", "yahoo.com", "reddit.com",
+    "wikipedia.org", "dropbox.com", "spotify.com", "adobe.com",
+})
+
+COMMON_LEGIT_SUBDOMAINS = {
+    "www", "web", "m", "mobile", "mail", "login", "account", "accounts",
+    "secure", "static", "api", "cdn", "support", "help", "blog", "news",
+    "drive", "docs", "calendar", "meet", "my", "id", "auth", "sso",
+}
 
 repo_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Sooty-master")
 DB_MAX_AGE_SECONDS = 6 * 60 * 60
@@ -56,6 +73,61 @@ def hostname_from_url(url):
     if domain.startswith("www."):
         domain = domain[4:]
     return domain
+
+
+def registered_domain(hostname):
+    """Registrable domain (e.g. mail.google.com -> google.com)."""
+    ext = tldextract.extract((hostname or "").lower())
+    if ext.domain and ext.suffix:
+        return f"{ext.domain}.{ext.suffix}"
+    return (hostname or "").lower()
+
+
+def is_apex_trusted_site(url):
+    """Homepage-style URL on a major brand domain (not a deep phishing path)."""
+    parsed = urlparse(normalize_url(url))
+    path = parsed.path or "/"
+    if path not in ("/", ""):
+        return False
+    if parsed.query or parsed.fragment:
+        return False
+
+    host = (parsed.hostname or "").lower()
+    if host.startswith("www."):
+        host = host[4:]
+
+    reg = registered_domain(host)
+    if reg not in TRUSTED_APEX_DOMAINS:
+        return False
+
+    ext = tldextract.extract(host)
+    if ext.subdomain:
+        labels = [p for p in ext.subdomain.split(".") if p]
+        if not all(label in COMMON_LEGIT_SUBDOMAINS for label in labels):
+            return False
+    return True
+
+
+def _apply_trusted_apex_dispute(url, hit):
+    """Downgrade likely misreports when PhishTank lists google.com-style apex URLs."""
+    if not hit.get("listed") or hit.get("related"):
+        return hit
+    if not is_apex_trusted_site(url):
+        return hit
+
+    matched = hit.get("matched_url") or "unknown URL"
+    phish_id = hit.get("detail", {}).get("phish_id") if hit.get("detail") else None
+    id_part = f" Phish ID {phish_id}." if phish_id else ""
+
+    hit = dict(hit)
+    hit["feed_disputed"] = True
+    hit["summary"] = (
+        f"PhishTank lists a URL matching this site ({matched}), but this is a major "
+        f"trusted domain — often a feed test or misreport.{id_part} "
+        f"Open the PhishTank detail page and compare the listed URL. "
+        f"Heuristics should guide the verdict here."
+    )
+    return hit
 
 
 def _db_path(name):
@@ -122,7 +194,8 @@ def check_phishtank(url, domain):
     except Exception:
         return None
 
-    target_keys, _ = url_match_keys(url)
+    target_keys, target_host = url_match_keys(url)
+    scan_reg = registered_domain(target_host or domain)
     direct_hit = None
     related_urls = []
 
@@ -138,14 +211,15 @@ def check_phishtank(url, domain):
             }
             break
         _, entry_host = url_match_keys(entry_url)
-        if domain and (domain in entry_url or entry_host == domain):
+        entry_reg = registered_domain(entry_host)
+        if scan_reg and entry_reg == scan_reg and not urls_match(entry_url, target_keys):
             related_urls.append({
                 "url": entry_url,
                 "phish_detail_page": entry.get("phish_detail_url"),
             })
 
     if direct_hit:
-        return {
+        hit = {
             "source": "phishtank",
             "listed": True,
             "related": False,
@@ -158,9 +232,10 @@ def check_phishtank(url, domain):
                 f"Verified: {direct_hit.get('verified')}, online: {direct_hit.get('online')}."
             ),
         }
+        return _apply_trusted_apex_dispute(url, hit)
 
     if related_urls:
-        return {
+        hit = {
             "source": "phishtank",
             "listed": False,
             "related": True,
@@ -168,10 +243,11 @@ def check_phishtank(url, domain):
             "related_urls": related_urls[:5],
             "related_count": len(related_urls),
             "summary": (
-                f"Exact URL not listed, but {len(related_urls)} PhishTank entry(ies) "
-                f"mention domain {domain}."
+                f"Exact URL not listed, but {len(related_urls)} other PhishTank URL(s) on "
+                f"the same domain ({scan_reg})."
             ),
         }
+        return _apply_trusted_apex_dispute(url, hit)
 
     return None
 
@@ -182,7 +258,8 @@ def check_openphish(url, domain):
     if not db_file:
         return None
 
-    target_keys, _ = url_match_keys(url)
+    target_keys, target_host = url_match_keys(url)
+    scan_reg = registered_domain(target_host or domain)
     direct_hit = None
     related_urls = []
 
@@ -196,13 +273,14 @@ def check_openphish(url, domain):
                     direct_hit = entry_url
                     break
                 _, entry_host = url_match_keys(entry_url)
-                if domain and (domain in entry_url or entry_host == domain):
+                entry_reg = registered_domain(entry_host)
+                if scan_reg and entry_reg == scan_reg and not urls_match(entry_url, target_keys):
                     related_urls.append(entry_url)
     except Exception:
         return None
 
     if direct_hit:
-        return {
+        hit = {
             "source": "openphish",
             "listed": True,
             "related": False,
@@ -211,9 +289,10 @@ def check_openphish(url, domain):
             "related_count": len(related_urls),
             "summary": f"Listed on OpenPhish public feed: {direct_hit}",
         }
+        return _apply_trusted_apex_dispute(url, hit)
 
     if related_urls:
-        return {
+        hit = {
             "source": "openphish",
             "listed": False,
             "related": True,
@@ -221,10 +300,11 @@ def check_openphish(url, domain):
             "related_urls": related_urls[:5],
             "related_count": len(related_urls),
             "summary": (
-                f"Exact URL not listed, but {len(related_urls)} OpenPhish entry(ies) "
-                f"mention domain {domain}."
+                f"Exact URL not listed, but {len(related_urls)} other OpenPhish URL(s) on "
+                f"the same domain ({scan_reg})."
             ),
         }
+        return _apply_trusted_apex_dispute(url, hit)
 
     return None
 

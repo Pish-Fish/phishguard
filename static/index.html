@@ -476,12 +476,14 @@ async function runSooty(url) {
       const mode = modeLabels[parsed.mode] || parsed.mode || 'Threat check';
       let html = `<div style="display:flex;align-items:center;gap:10px;justify-content:space-between;margin-bottom:8px;"><div style="font-weight:700;color:var(--muted);">Sooty · ${mode}</div><div class="ai-badge ${badgeCls}" style="font-size:12px;padding:6px 10px;">${verdict}</div></div>`;
       html += row('Summary', parsed.summary || 'Check complete');
+      if (parsed.matched_url) html += row('Feed matched URL', parsed.matched_url, parsed.feed_disputed ? 'warn' : 'bad');
+      if (parsed.feed_disputed) html += row('Note', 'Major-site listing — verify on PhishTank; heuristics preferred', 'warn');
       if (parsed.heuristic_score !== undefined) html += row('Heuristic score', `${parsed.heuristic_score}/100`);
       if (parsed.in_database === true && parsed.result) {
         html += row('Phish ID', parsed.result.phish_id ?? 'N/A');
         html += row('Details', parsed.result.phish_detail_page ?? 'N/A');
       }
-      if (parsed.related_count > 0) html += row('Related on domain', String(parsed.related_count), parsed.related_count > 0 ? 'warn' : 'ok');
+      if (parsed.related_count > 0) html += row('Other URLs on domain', String(parsed.related_count), 'warn');
       document.getElementById('sootyResult').innerHTML = html;
     } else {
       _displayToolOutput('sootyResult', 'Sooty', d);
@@ -518,9 +520,14 @@ async function runPhishingCatcher(url) {
 
       const header = `<div style="display:flex;align-items:center;gap:10px;justify-content:space-between;margin-bottom:8px;"><div style="font-weight:700;color:var(--muted);">Phishing Catcher</div><div class="ai-badge ${badgeCls}" style="font-size:12px;padding:6px 10px;">${category}</div></div>`;
       let body = row('Score', `${score}/100`, (category === 'SAFE' || category === 'Benign') ? 'ok' : category === 'Suspicious' ? 'bad' : 'warn');
-      if (parsed.feed_listed) {
+      if (parsed.feed_disputed) {
+        const src = parsed.feed_source === 'openphish' ? 'OpenPhish' : 'PhishTank';
+        body += row('Threat feed', `${src} match (trusted-domain override)`, 'warn');
+        if (parsed.matched_feed_url) body += row('Feed matched URL', parsed.matched_feed_url, 'warn');
+      } else if (parsed.feed_listed) {
         const src = parsed.feed_source === 'openphish' ? 'OpenPhish' : 'PhishTank';
         body += row('Threat feed', `Listed on ${src}`, 'bad');
+        if (parsed.matched_feed_url) body += row('Feed matched URL', parsed.matched_feed_url, 'bad');
       } else if (parsed.feed_related) {
         const src = parsed.feed_source === 'openphish' ? 'OpenPhish' : 'PhishTank';
         body += row('Threat feed', `Related ${src} entries on domain`, 'warn');

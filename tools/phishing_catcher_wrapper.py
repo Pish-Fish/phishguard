@@ -244,6 +244,32 @@ def build_summary(domain, adjusted, label, raw_score, adjustment, reasons):
 
 def _feed_override_output(url, domain, feed_hit, raw_score, adjusted, adjustment, reasons, registered):
     """When URL is on a threat feed, heuristics alone are misleading."""
+    if feed_hit.get("feed_disputed"):
+        label = map_score_to_label(adjusted)
+        display_score = adjusted
+        feed_name = "PhishTank" if feed_hit["source"] == "phishtank" else "OpenPhish"
+        summary = (
+            f"{feed_name} lists a matching URL on a major trusted domain — likely a "
+            f"misreport; using heuristic score {adjusted}/100. Verify on PhishTank."
+        )
+        reasons = [feed_hit["summary"], *reasons]
+        return {
+            "url": url,
+            "domain": domain,
+            "registered_domain": registered,
+            "score": display_score,
+            "raw_score": raw_score,
+            "heuristic_score": adjusted,
+            "score_adjustment": adjustment,
+            "category": label,
+            "feed_listed": True,
+            "feed_disputed": True,
+            "feed_source": feed_hit["source"],
+            "feed_related": feed_hit.get("related", False),
+            "matched_feed_url": feed_hit.get("matched_url"),
+            "reasons": reasons,
+            "summary": summary,
+        }
     if feed_hit["listed"]:
         label = "Suspicious"
         display_score = max(adjusted, 100)
