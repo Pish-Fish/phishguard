@@ -1,0 +1,17 @@
+flask==3.0.3
+flask-cors==4.0.1
+gunicorn==23.0.0
+python-whois==0.9.4
+dnspython==2.6.1
+python-nmap==0.7.1
+requests==2.32.3
+tldextract==4.4.0
+PyYAML==5.1
+tld==0.7.9
+python_Levenshtein==0.12.0
+termcolor==1.1.0
+certstream==1.10
+tqdm==4.19.4
+websocket-client==0.48.0
+wget==3.2
+confusables==0.4.0

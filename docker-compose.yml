@@ -1,0 +1,10 @@
+services:
+  phishguard:
+    build: .
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    environment:
+      NMAP_PATH: /usr/bin/nmap
+      PORT: "8080"

@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>PhishGuard — University Phishing Detection System</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg: #07090f;
+  --surface: #0e1120;
+  --surface2: #141829;
+  --surface3: #1a1f35;
+  --border: #232a45;
+  --border2: #2d3655;
+  --text: #e8ecf8;
+  --muted: #7a85a8;
+  --accent: #3b82f6;
+  --accent2: #60a5fa;
+  --accent3: #1d4ed8;
+  --danger: #ef4444;
+  --warn: #f59e0b;
+  --safe: #22c55e;
+  --radius: 14px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { font-family: 'Instrument Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
+
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+  height: 62px; display: flex; align-items: center; justify-content: space-between;
+  padding: 0 40px;
+  background: rgba(7,9,15,0.85); backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+}
+.nav-logo { display: flex; align-items: center; gap: 10px; font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; letter-spacing: -0.5px; color: var(--text); text-decoration: none; }
+.nav-logo-icon { width: 32px; height: 32px; background: linear-gradient(135deg, var(--accent), #818cf8); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 15px; }
+.nav-logo span { color: var(--accent2); }
+.nav-links { display: flex; gap: 6px; align-items: center; list-style: none; }
+.nav-links a { color: var(--muted); text-decoration: none; font-size: 14px; font-weight: 500; padding: 6px 14px; border-radius: 8px; transition: all 0.18s; }
+.nav-links a:hover { color: var(--text); background: var(--surface2); }
+.nav-cta { background: var(--accent) !important; color: #fff !important; padding: 7px 18px !important; }
+.nav-cta:hover { background: var(--accent3) !important; }
+
+.hero { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 100px 24px 60px; position: relative; overflow: hidden; }
+.hero-bg { position: absolute; inset: 0; z-index: 0; background: radial-gradient(ellipse 60% 50% at 50% 0%, rgba(59,130,246,0.12) 0%, transparent 70%), radial-gradient(ellipse 40% 30% at 80% 60%, rgba(129,140,248,0.07) 0%, transparent 60%); }
+.hero-grid { position: absolute; inset: 0; z-index: 0; background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px); background-size: 40px 40px; mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 30%, transparent 80%); opacity: 0.3; }
+.hero-content { position: relative; z-index: 1; max-width: 780px; }
+.hero-pill { display: inline-flex; align-items: center; gap: 7px; background: var(--surface2); border: 1px solid var(--border2); border-radius: 20px; padding: 6px 16px; font-size: 12px; font-family: 'JetBrains Mono', monospace; color: var(--accent2); margin-bottom: 28px; animation: fadeUp 0.6s ease both; }
+.pill-dot { width: 6px; height: 6px; background: var(--safe); border-radius: 50%; animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.4} }
+.hero h1 { font-family: 'Syne', sans-serif; font-size: clamp(38px, 6vw, 68px); font-weight: 800; line-height: 1.05; letter-spacing: -2px; color: var(--text); margin-bottom: 20px; animation: fadeUp 0.6s 0.1s ease both; }
+.hero h1 .hl { background: linear-gradient(90deg, var(--accent2), #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.hero p { font-size: 17px; color: var(--muted); max-width: 520px; margin: 0 auto 36px; line-height: 1.7; animation: fadeUp 0.6s 0.2s ease both; }
+.hero-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; animation: fadeUp 0.6s 0.3s ease both; }
+.btn-hero-primary { display: inline-flex; align-items: center; gap: 8px; background: var(--accent); color: #fff; padding: 13px 28px; border-radius: 10px; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 15px; text-decoration: none; border: none; cursor: pointer; transition: all 0.18s; box-shadow: 0 0 28px rgba(59,130,246,0.3); }
+.btn-hero-primary:hover { background: var(--accent3); transform: translateY(-2px); box-shadow: 0 0 40px rgba(59,130,246,0.4); }
+.btn-hero-ghost { display: inline-flex; align-items: center; gap: 8px; background: transparent; color: var(--text); padding: 13px 28px; border-radius: 10px; font-family: 'Syne', sans-serif; font-weight: 600; font-size: 15px; text-decoration: none; border: 1px solid var(--border2); cursor: pointer; transition: all 0.18s; }
+.btn-hero-ghost:hover { background: var(--surface2); border-color: var(--accent); }
+.hero-stats { display: flex; gap: 32px; justify-content: center; margin-top: 56px; padding-top: 40px; border-top: 1px solid var(--border); animation: fadeUp 0.6s 0.4s ease both; flex-wrap: wrap; }
+.stat { text-align: center; }
+.stat-num { font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 800; color: var(--accent2); display: block; }
+.stat-lbl { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+.section { padding: 90px 24px; max-width: 1100px; margin: 0 auto; }
+.section-divider { height: 1px; background: linear-gradient(90deg, transparent, var(--border), transparent); margin: 0 24px; }
+.section-tag { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--accent2); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px; }
+.section-title { font-family: 'Syne', sans-serif; font-size: clamp(28px, 4vw, 42px); font-weight: 800; letter-spacing: -1px; margin-bottom: 12px; }
+.section-sub { color: var(--muted); font-size: 16px; max-width: 500px; line-height: 1.7; margin-bottom: 48px; }
+
+.features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+.feat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; transition: border-color 0.2s, transform 0.2s; }
+.feat-card:hover { border-color: var(--accent); transform: translateY(-3px); }
+.feat-icon { width: 42px; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; margin-bottom: 14px; }
+.fi-blue{background:rgba(59,130,246,0.15)} .fi-purple{background:rgba(167,139,250,0.15)} .fi-green{background:rgba(34,197,94,0.15)} .fi-orange{background:rgba(245,158,11,0.15)} .fi-red{background:rgba(239,68,68,0.15)} .fi-teal{background:rgba(20,184,166,0.15)}
+.feat-name { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+.feat-desc { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+.how-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.how-step { padding: 28px 24px; border-right: 1px solid var(--border); background: var(--surface); transition: background 0.2s; }
+.how-step:last-child { border-right: none; }
+.how-step:hover { background: var(--surface2); }
+.how-num { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--accent2); margin-bottom: 10px; letter-spacing: 1px; }
+.how-title { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+.how-desc { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+#scanner { padding: 90px 24px; max-width: 1100px; margin: 0 auto; }
+.url-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; margin-bottom: 20px; box-shadow: 0 4px 24px rgba(0,0,0,0.3); }
+.url-label { font-size: 11px; font-weight: 600; color: var(--muted); letter-spacing: 1.5px; text-transform: uppercase; font-family: 'JetBrains Mono', monospace; margin-bottom: 10px; }
+.url-row { display: flex; gap: 10px; }
+.url-input { flex: 1; padding: 12px 16px; font-family: 'JetBrains Mono', monospace; font-size: 13px; background: var(--surface2); border: 1.5px solid var(--border2); border-radius: 10px; color: var(--text); outline: none; transition: border-color 0.2s; }
+.url-input:focus { border-color: var(--accent); }
+.url-input::placeholder { color: var(--muted); }
+.btn { padding: 12px 20px; border-radius: 10px; font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; border: none; transition: all 0.18s; display: flex; align-items: center; gap: 7px; white-space: nowrap; }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: var(--accent3); transform: translateY(-1px); }
+.btn-primary:disabled { background: #1e3a6e; cursor: not-allowed; transform: none; color: #7a9fd4; }
+.btn-outline { background: transparent; color: var(--accent2); border: 1.5px solid var(--border2); }
+.btn-outline:hover { border-color: var(--accent); background: var(--surface2); }
+.quick-links { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.quick-label { font-size: 12px; color: var(--muted); }
+.quick-chip { font-size: 11px; font-family: 'JetBrains Mono', monospace; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; cursor: pointer; color: var(--accent2); transition: all 0.15s; }
+.quick-chip:hover { border-color: var(--accent); background: rgba(59,130,246,0.08); }
+
+.ai-card { border-radius: var(--radius); padding: 20px 24px; margin-bottom: 20px; border: 1.5px solid var(--border); background: var(--surface); display: none; }
+.ai-card.visible { display: block; animation: fadeUp 0.35s ease; }
+.ai-card.safe { border-color: #166534; background: rgba(22,101,52,0.12); }
+.ai-card.warning { border-color: #92400e; background: rgba(120,53,15,0.12); }
+.ai-card.danger { border-color: #991b1b; background: rgba(127,29,29,0.12); }
+.ai-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.ai-badge { font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 20px; letter-spacing: 1px; text-transform: uppercase; font-family: 'JetBrains Mono', monospace; }
+.badge-safe { background: rgba(34,197,94,0.15); color: var(--safe); border: 1px solid rgba(34,197,94,0.3); }
+.badge-warn { background: rgba(245,158,11,0.15); color: var(--warn); border: 1px solid rgba(245,158,11,0.3); }
+.badge-danger { background: rgba(239,68,68,0.15); color: var(--danger); border: 1px solid rgba(239,68,68,0.3); }
+.ai-title { font-weight: 600; font-size: 15px; }
+.ai-score { margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 22px; font-weight: 500; }
+.ai-score.safe{color:var(--safe)} .ai-score.warning{color:var(--warn)} .ai-score.danger{color:var(--danger)}
+.ai-body { font-size: 14px; color: var(--text); line-height: 1.75; }
+.ai-tips { margin-top: 14px; }
+.ai-tip { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: var(--muted); margin-bottom: 5px; }
+.ai-tip span { color: var(--accent2); font-weight: 700; }
+
+.tools-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+@media (max-width: 680px) {
+  .tools-grid { grid-template-columns: 1fr; }
+  .url-row { flex-direction: column; }
+  nav { padding: 0 20px; }
+  .nav-links { display: none; }
+}
+
+.tool-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; transition: border-color 0.2s; }
+.tool-card:hover { border-color: var(--border2); }
+.tool-header { padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+.tool-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+.tool-name { font-weight: 600; font-size: 14px; }
+.tool-desc { font-size: 11px; color: var(--muted); margin-top: 1px; }
+.tool-run-btn { margin-left: auto; padding: 5px 12px; font-size: 12px; font-weight: 700; background: var(--surface2); border: 1px solid var(--border2); border-radius: 6px; cursor: pointer; color: var(--accent2); transition: all 0.15s; font-family: 'Syne', sans-serif; }
+.tool-run-btn:hover { border-color: var(--accent); background: rgba(59,130,246,0.08); }
+.tool-run-btn:disabled { color: var(--muted); cursor: not-allowed; }
+.tool-body { padding: 16px 18px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text); min-height: 140px; background: var(--surface2); line-height: 1.9; white-space: pre-wrap; word-break: break-all; }
+.placeholder { color: var(--muted); font-style: italic; font-family: 'Instrument Sans', sans-serif; font-size: 13px; }
+.loading-line { display: flex; align-items: center; gap: 8px; color: var(--accent2); font-family: 'Instrument Sans', sans-serif; font-size: 13px; }
+.spinner { width: 13px; height: 13px; border: 2px solid var(--border2); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
+.result-line { display: flex; gap: 8px; align-items: baseline; }
+.result-key { color: var(--muted); min-width: 140px; font-size: 11px; }
+.result-val { color: var(--text); font-size: 12px; }
+.result-val.ok{color:var(--safe)} .result-val.bad{color:var(--danger)} .result-val.warn{color:var(--warn)}
+hr.dl { border: none; border-top: 1px solid var(--border); margin: 5px 0; }
+.error-msg { color: var(--danger); font-size: 12px; }
+
+.summary-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-top: 16px; overflow: hidden; display: none; }
+.summary-card.visible { display: block; animation: fadeUp 0.35s ease; }
+.summary-header { padding: 14px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; background: linear-gradient(90deg, rgba(59,130,246,0.07), transparent); }
+.summary-title { font-weight: 600; font-size: 14px; }
+.ai-tag { font-size: 10px; font-weight: 700; background: linear-gradient(135deg, var(--accent), #818cf8); color: #fff; padding: 3px 9px; border-radius: 20px; letter-spacing: 0.5px; font-family: 'JetBrains Mono', monospace; }
+.summary-body { padding: 18px 20px; font-size: 14px; line-height: 1.8; color: var(--text); }
+
+footer { border-top: 1px solid var(--border); padding: 40px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; background: var(--surface); }
+.footer-logo { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 800; color: var(--text); }
+.footer-logo span { color: var(--accent2); }
+
+@keyframes fadeUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+@keyframes spin { to{transform:rotate(360deg)} }
+.fade-in { opacity: 0; transform: translateY(20px); transition: opacity 0.5s ease, transform 0.5s ease; }
+.ai-emoji { display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; border-radius:8px; font-size:16px; line-height:1; }
+.ai-emoji.blue { background: linear-gradient(135deg, rgba(59,130,246,0.12), rgba(96,165,250,0.06)); box-shadow: 0 8px 20px rgba(59,130,246,0.08), 0 0 8px rgba(96,165,250,0.04) inset; }
+.ai-emoji.purple { background: linear-gradient(135deg, rgba(167,139,250,0.12), rgba(129,140,248,0.06)); box-shadow: 0 8px 20px rgba(167,139,250,0.06); }
+.ai-emoji.green { background: linear-gradient(135deg, rgba(34,197,94,0.12), rgba(34,197,94,0.06)); box-shadow: 0 8px 20px rgba(34,197,94,0.06); }
+.ai-emoji.orange { background: linear-gradient(135deg, rgba(245,158,11,0.12), rgba(245,158,11,0.06)); box-shadow: 0 8px 20px rgba(245,158,11,0.06); }
+.ai-emoji.red { background: linear-gradient(135deg, rgba(239,68,68,0.12), rgba(239,68,68,0.06)); box-shadow: 0 8px 20px rgba(239,68,68,0.06); }
+.ai-emoji.teal { background: linear-gradient(135deg, rgba(20,184,166,0.12), rgba(20,184,166,0.06)); box-shadow: 0 8px 20px rgba(20,184,166,0.06); }
+
+.fade-in.visible { opacity: 1; transform: translateY(0); }
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="#home">
+    <div class="nav-logo-icon"><span class="ai-emoji blue">◆</span></div>
+    Phish<span>Guard</span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="#features">Features</a></li>
+    <li><a href="#how">How It Works</a></li>
+    <li><a href="#scanner">Scanner</a></li>
+    <li><a href="#scanner" class="nav-cta">Try Now →</a></li>
+  </ul>
+</nav>
+
+<section class="hero" id="home">
+  <div class="hero-bg"></div>
+  <div class="hero-grid"></div>
+  <div class="hero-content">
+    <div class="hero-pill"><div class="pill-dot"></div>AI-Powered · University Cybersecurity · Capstone Demo</div>
+    <h1>Stop Phishing<br/>Before It <span class="hl">Stops You</span></h1>
+    <p>PhishGuard protects university users from phishing and online attacks with real-time threat detection, DNS analysis, port scanning, SSL verification, and AI-powered awareness.</p>
+    <div class="hero-btns">
+      <a class="btn-hero-primary" href="#scanner"><span class="ai-emoji blue">◉</span> Analyze a URL</a>
+      <a class="btn-hero-ghost" href="#features">See Features</a>
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<section id="features">
+  <div class="section fade-in">
+    <div class="section-tag">// capabilities</div>
+    <div class="section-title">Everything you need to<br/>stay safe online</div>
+    <div class="section-sub">A complete suite of security tools designed for university students and staff who need fast, reliable threat detection.</div>
+    <div class="features-grid">
+      <div class="feat-card"><div class="feat-icon fi-blue"><span class="ai-emoji blue">▭</span></div><div class="feat-name">WHOIS Lookup</div><div class="feat-desc">Check domain registration history, ownership, and age. Newly registered domains are a major phishing red flag.</div></div>
+      <div class="feat-card"><div class="feat-icon fi-purple"><span class="ai-emoji purple">⬡</span></div><div class="feat-name">DNS / NSLookup</div><div class="feat-desc">Resolve A, MX, and NS records. Detects suspicious nameservers and DNS configurations used by malicious hosts.</div></div>
+      <div class="feat-card"><div class="feat-icon fi-green"><span class="ai-emoji green">◈</span></div><div class="feat-name">Port Scanner (Nmap)</div><div class="feat-desc">Scan for open ports and exposed services. Legitimate sites don't expose database or FTP ports publicly.</div></div>
+      <div class="feat-card"><div class="feat-icon fi-orange"><span class="ai-emoji orange">◆</span></div><div class="feat-name">SSL Certificate Check</div><div class="feat-desc">Verify TLS version, issuer, validation level, and expiry to confirm a site's identity is trustworthy.</div></div>
+      <div class="feat-card"><div class="feat-icon fi-purple"><span class="ai-emoji purple">⊛</span></div><div class="feat-name">Sooty</div><div class="feat-desc">Checks OpenPhish and PhishTank feeds, plus domain heuristics, to catch known phishing URLs and suspicious domains.</div></div>
+      <div class="feat-card"><div class="feat-icon fi-green"><span class="ai-emoji green">◐</span></div><div class="feat-name">Phishing Catcher</div><div class="feat-desc">Detects phishing patterns in URLs (lookalike domains, risky hosting, suspicious keywords) and flags high-risk links.</div></div>
+      <div class="feat-card"><div class="feat-icon fi-red"><span class="ai-emoji red">⬢</span></div><div class="feat-name">AI Threat Verdict</div><div class="feat-desc">AI analyzes the URL instantly and delivers a SAFE / WARNING / DANGER verdict with plain-English explanation.</div></div>
+      <div class="feat-card"><div class="feat-icon fi-teal"><span class="ai-emoji teal">▦</span></div><div class="feat-name">AI Security Summary</div><div class="feat-desc">After all tools run, AI synthesizes every finding into one clear jargon-free summary built for non-technical users.</div></div>
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<section id="how">
+  <div class="section fade-in">
+    <div class="section-tag">// workflow</div>
+    <div class="section-title">How PhishGuard works</div>
+    <div class="section-sub">Four steps from suspicious link to clear verdict — in seconds.</div>
+    <div class="how-grid">
+      <div class="how-step"><div class="how-num">STEP 01</div><div class="how-title">Paste the URL</div><div class="how-desc">Drop any suspicious link you received via email, chat, or social media into the scanner.</div></div>
+      <div class="how-step"><div class="how-num">STEP 02</div><div class="how-title">Run the Tools</div><div class="how-desc">PhishGuard runs WHOIS, DNS, Nmap, and SSL checks simultaneously against the target domain.</div></div>
+      <div class="how-step"><div class="how-num">STEP 03</div><div class="how-title">AI Analyzes</div><div class="how-desc">AI evaluates the URL and all tool results, then generates a risk score and detailed verdict.</div></div>
+      <div class="how-step"><div class="how-num">STEP 04</div><div class="how-title">Stay Safe</div><div class="how-desc">Get a clear SAFE, WARNING, or DANGER verdict — plus actionable tips on what to do next.</div></div>
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<section id="scanner">
+  <div class="section fade-in" style="padding-bottom:0">
+    <div class="section-tag">// scanner</div>
+    <div class="section-title">Analyze a URL now</div>
+    <div class="section-sub">Paste any link below. Our AI and security tools will inspect it in real-time.</div>
+  </div>
+  <div style="max-width:1100px;margin:0 auto;padding:0 24px 90px;">
+
+    <div class="url-card">
+        <div class="url-label"><span class="ai-emoji teal">◊</span> Target URL</div>
+      <div class="url-row">
+        <input class="url-input" id="urlInput" type="text" placeholder="https://suspicious-site.xyz/login" onkeydown="if(event.key==='Enter') runAll()"/>
+        <button class="btn btn-primary" id="analyzeBtn" onclick="runAll()"><span class="ai-emoji blue">◉</span> Analyze</button>
+        <button class="btn btn-outline" onclick="clearAll()">Clear</button>
+      </div>
+      <div class="quick-links">
+        <span class="quick-label">Try sample:</span>
+        <span class="quick-chip" onclick="setUrl('https://google.com')">google.com</span>
+        <span class="quick-chip" onclick="setUrl('http://paypa1-secure-login.xyz/verify')">phishing sample</span>
+        <span class="quick-chip" onclick="setUrl('https://auth-uphold-log-com.weebly.com/')">listed phishing</span>
+        <span class="quick-chip" onclick="setUrl('https://dilnet.upd.edu.ph')">UP Diliman</span>
+        <span class="quick-chip" onclick="setUrl('https://web.facebook.com')">facebook.com</span>
+      </div>
+    </div>
+
+    <div class="ai-card" id="aiVerdict">
+      <div class="ai-header">
+        <div class="ai-badge" id="verdictBadge">—</div>
+        <div class="ai-title" id="verdictTitle">Analyzing…</div>
+        <div class="ai-score" id="verdictScore">—</div>
+      </div>
+      <div class="ai-body" id="verdictBody"></div>
+      <div class="ai-tips" id="verdictTips"></div>
+    </div>
+
+    <div class="tools-grid">
+      <div class="tool-card">
+        <div class="tool-header">
+          <div class="tool-icon fi-blue"><span class="ai-emoji blue">▭</span></div>
+          <div><div class="tool-name">WHOIS Lookup</div><div class="tool-desc">Registration & ownership</div></div>
+          <button class="tool-run-btn" id="whoisBtn" onclick="runTool('whois')">Run</button>
+        </div>
+        <div class="tool-body" id="whoisResult"><span class="placeholder">Enter a URL and click Analyze or Run.</span></div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-header">
+          <div class="tool-icon fi-purple"><span class="ai-emoji purple">⬡</span></div>
+          <div><div class="tool-name">NSLookup / DNS</div><div class="tool-desc">DNS records & IP address</div></div>
+          <button class="tool-run-btn" id="nslookupBtn" onclick="runTool('nslookup')">Run</button>
+        </div>
+        <div class="tool-body" id="nslookupResult"><span class="placeholder">Enter a URL and click Analyze or Run.</span></div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-header">
+          <div class="tool-icon fi-green"><span class="ai-emoji green">◈</span></div>
+          <div><div class="tool-name">Port Scan (Nmap)</div><div class="tool-desc">Open ports & services</div></div>
+          <button class="tool-run-btn" id="nmapBtn" onclick="runTool('nmap')">Run</button>
+        </div>
+        <div class="tool-body" id="nmapResult"><span class="placeholder">Enter a URL and click Analyze or Run.</span></div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-header">
+          <div class="tool-icon fi-orange"><span class="ai-emoji orange">◆</span></div>
+          <div><div class="tool-name">SSL Certificate</div><div class="tool-desc">TLS validity & issuer</div></div>
+          <button class="tool-run-btn" id="sslBtn" onclick="runTool('ssl')">Run</button>
+        </div>
+        <div class="tool-body" id="sslResult"><span class="placeholder">Enter a URL and click Analyze or Run.</span></div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-header">
+          <div class="tool-icon fi-purple"><span class="ai-emoji purple">⊛</span></div>
+          <div><div class="tool-name">Sooty</div><div class="tool-desc">Threat feeds + domain heuristics</div></div>
+          <button class="tool-run-btn" id="sootyBtn" onclick="runTool('sooty')">Run</button>
+        </div>
+        <div class="tool-body" id="sootyResult"><span class="placeholder">Enter a URL and click Analyze or Run.</span></div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-header">
+          <div class="tool-icon fi-green"><span class="ai-emoji green">◐</span></div>
+          <div><div class="tool-name">Phishing Catcher</div><div class="tool-desc">Phishing URL detection</div></div>
+          <button class="tool-run-btn" id="phishingBtn" onclick="runTool('phishing')">Run</button>
+        </div>
+        <div class="tool-body" id="phishingResult"><span class="placeholder">Enter a URL and click Analyze or Run.</span></div>
+      </div>
+    </div>
+
+    <div class="summary-card" id="summaryCard">
+      <div class="summary-header">
+        <span class="ai-emoji purple">⬢</span>
+        <span class="summary-title">AI Security Summary</span>
+        <span class="ai-tag">AI</span>
+      </div>
+      <div class="summary-body" id="summaryBody"></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div>
+    <div class="footer-logo">Phish<span>Guard</span></div>
+    <div style="font-size:12px;color:var(--muted);margin-top:4px;">University Phishing Detection & Awareness System</div>
+  </div>
+  <div style="font-size:12px;color:var(--muted);text-align:center;">
+    Capstone Project Demo &nbsp;·&nbsp; BS Information Technology<br/>
+    Built with Python + Flask
+  </div>
+  <div style="font-size:12px;color:var(--muted);text-align:right;">
+    Tools: WHOIS · NSLookup · Nmap · SSL · Sooty · Phishing Catcher<br/>
+    Backend: Python Flask · Frontend: HTML/CSS/JS
+  </div>
+</footer>
+
+<script>
+const API = window.location.origin;
+
+function getUrl() { return document.getElementById('urlInput').value.trim(); }
+function setUrl(u) { document.getElementById('urlInput').value = u; }
+function loading(id, msg) { document.getElementById(id).innerHTML = `<div class="loading-line"><div class="spinner"></div>${msg||'Running…'}</div>`; }
+function row(key, val, cls) { return `<div class="result-line"><span class="result-key">${key}</span><span class="result-val ${cls||''}">${val}</span></div>`; }
+function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+async function runWhois(url) {
+  loading('whoisResult', 'Querying WHOIS database…');
+  try {
+    const res = await fetch(`${API}/api/whois`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({url}) });
+    const d = await res.json();
+    if (!d.success) throw new Error(d.error);
+    const ageYears = parseInt(d.age);
+    const ageClass = d.age.includes('day') ? 'bad' : ageYears < 1 ? 'warn' : 'ok';
+    document.getElementById('whoisResult').innerHTML =
+      row('Domain', d.domain) + '<hr class="dl">' +
+      row('Registrar', d.registrar) +
+      row('Created', d.created, ageClass) +
+      row('Domain Age', d.age, ageClass) +
+      row('Expires', d.expires) +
+      row('Country', d.country) +
+      row('Name Server 1', d.name_servers[0] || 'N/A') +
+      row('Name Server 2', d.name_servers[1] || 'N/A') +
+      row('Status', d.status);
+  } catch(e) {
+    document.getElementById('whoisResult').innerHTML = `<span class="error-msg">△ Error: ${e.message}</span>`;
+  }
+}
+
+async function runNslookup(url) {
+  loading('nslookupResult', 'Resolving DNS records…');
+  try {
+    const res = await fetch(`${API}/api/nslookup`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({url}) });
+    const d = await res.json();
+    if (!d.success) throw new Error(d.error);
+    let html = row('Hostname', d.domain) + '<hr class="dl">';
+    d.a_records.forEach((ip, i) => html += row(`A Record ${i+1}`, ip));
+    if (d.reverse_dns) html += row('Reverse DNS', d.reverse_dns);
+    html += '<hr class="dl">';
+    d.ns_records.slice(0,2).forEach((ns, i) => html += row(`NS Server ${i+1}`, ns));
+    if (d.mx_records.length) d.mx_records.slice(0,2).forEach((mx, i) => html += row(`MX Record ${i+1}`, mx));
+    else html += row('MX Record', 'None found', 'warn');
+    document.getElementById('nslookupResult').innerHTML = html;
+  } catch(e) {
+    document.getElementById('nslookupResult').innerHTML = `<span class="error-msg">△ Error: ${e.message}</span>`;
+  }
+}
+
+async function runNmap(url) {
+  loading('nmapResult', 'Scanning ports (this may take ~15 seconds)…');
+  try {
+    const res = await fetch(`${API}/api/portscan`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({url}) });
+    const d = await res.json();
+    if (!d.success) throw new Error(d.error);
+    let html = row('Target', d.domain) + '<hr class="dl">';
+    if (d.ports.length === 0) {
+      html += row('Result', 'No open ports detected', 'ok');
+    } else {
+      d.ports.forEach(p => {
+        const risky = [21, 23, 3306, 5432].includes(p.port);
+        const cls = p.state === 'open' && risky ? 'bad' : p.state === 'open' ? 'ok' : 'warn';
+        html += row(`Port ${p.port} (${p.service})`, p.state.toUpperCase(), cls);
+      });
+    }
+    html += '<hr class="dl">' + row('Open Ports', `${d.open_count} found`, d.open_count > 3 ? 'bad' : 'ok');
+    document.getElementById('nmapResult').innerHTML = html;
+  } catch(e) {
+    document.getElementById('nmapResult').innerHTML = `<span class="error-msg">△ Error: ${e.message}</span>`;
+  }
+}
+
+async function runSsl(url) {
+  loading('sslResult', 'Checking SSL certificate…');
+  try {
+    const res = await fetch(`${API}/api/ssl`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({url}) });
+    const d = await res.json();
+    if (!d.success) throw new Error(d.error);
+    const daysClass = d.is_expired ? 'bad' : d.near_expiry ? 'warn' : 'ok';
+    document.getElementById('sslResult').innerHTML =
+      row('Domain', d.domain) + '<hr class="dl">' +
+      row('Issuer', d.issuer) +
+      row('Issued To', d.issued_to) +
+      row('Valid From', d.valid_from) +
+      row('Valid Until', d.valid_until, daysClass) +
+      row('Days Remaining', `${d.days_remaining} days`, daysClass) +
+      row('Wildcard', d.wildcard ? 'Yes' : 'No') +
+      row('SANs', d.sans.slice(0,2).join(', ') || 'None') +
+      row('Status', d.is_expired ? '✕ EXPIRED' : d.near_expiry ? '△ Near Expiry' : '✓ Valid', d.is_expired ? 'bad' : d.near_expiry ? 'warn' : 'ok');
+  } catch(e) {
+    document.getElementById('sslResult').innerHTML = `<span class="error-msg">△ Error: ${e.message}</span>`;
+  }
+}
+
+function _displayToolOutput(id, label, data) {
+  if (!data.success) {
+    document.getElementById(id).innerHTML = `<span class="error-msg">△ ${label} error: ${data.error}</span>`;
+    return;
+  }
+  const output = data.output || 'No output returned';
+  document.getElementById(id).innerHTML = `<div class="result-line"><span class="result-key">${label}</span><span class="result-val">${output}</span></div>`;
+}
+
+async function runSooty(url) {
+  loading('sootyResult', 'Checking PhishTank (first run may download the public database, ~1–2 min)…');
+  try {
+    const res = await fetch(`${API}/api/sooty`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({url}) });
+    const d = await res.json();
+    if (!d.success) {
+      document.getElementById('sootyResult').innerHTML = `<span class="error-msg">△ Sooty error: ${d.error}</span>`;
+      return;
+    }
+    let parsed = null;
+    try { parsed = JSON.parse(d.output); } catch (e) { /* plain text from API mode */ }
+    if (parsed && parsed.success !== undefined) {
+      const verdict = parsed.verdict || (parsed.in_database ? 'DANGER' : 'SAFE');
+      const badgeCls = verdict === 'DANGER' ? 'badge-danger' : verdict === 'WARNING' ? 'badge-warn' : 'badge-safe';
+      const modeLabels = { api: 'PhishTank API', phishtank_local: 'PhishTank (local)', openphish_feed: 'OpenPhish feed', domain_heuristics: 'Domain heuristics' };
+      const mode = modeLabels[parsed.mode] || parsed.mode || 'Threat check';
+      let html = `<div style="display:flex;align-items:center;gap:10px;justify-content:space-between;margin-bottom:8px;"><div style="font-weight:700;color:var(--muted);">Sooty · ${mode}</div><div class="ai-badge ${badgeCls}" style="font-size:12px;padding:6px 10px;">${verdict}</div></div>`;
+      html += row('Summary', parsed.summary || 'Check complete');
+      if (parsed.heuristic_score !== undefined) html += row('Heuristic score', `${parsed.heuristic_score}/100`);
+      if (parsed.in_database === true && parsed.result) {
+        html += row('Phish ID', parsed.result.phish_id ?? 'N/A');
+        html += row('Details', parsed.result.phish_detail_page ?? 'N/A');
+      }
+      if (parsed.related_count > 0) html += row('Related on domain', String(parsed.related_count), parsed.related_count > 0 ? 'warn' : 'ok');
+      document.getElementById('sootyResult').innerHTML = html;
+    } else {
+      _displayToolOutput('sootyResult', 'Sooty', d);
+    }
+  } catch(e) {
+    document.getElementById('sootyResult').innerHTML = `<span class="error-msg">△ Error: ${e.message}</span>`;
+  }
+}
+
+async function runPhishingCatcher(url) {
+  loading('phishingResult', 'Running Phishing Catcher scan…');
+  try {
+    const res = await fetch(`${API}/api/phishing_catcher`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({url}) });
+    const d = await res.json();
+    if (!d.success) {
+      document.getElementById('phishingResult').innerHTML = `<span class="error-msg">△ Phishing Catcher error: ${d.error}</span>`;
+      return;
+    }
+
+    // Try to parse structured JSON output from the tool
+    let parsed = null;
+    try { parsed = JSON.parse(d.output); } catch (e) { /* fallback to raw */ }
+
+    if (parsed && parsed.score !== undefined) {
+      const score = parsed.score;
+      const category = parsed.category || 'Unknown';
+      const summary = parsed.summary || parsed.output || '';
+
+      let badgeCls = 'badge-warn';
+      if (category === 'Suspicious') badgeCls = 'badge-danger';
+      else if (category === 'Likely') badgeCls = 'badge-warn';
+      else if (category === 'Potential') badgeCls = 'badge-warn';
+      else if (category === 'SAFE' || category === 'Benign') badgeCls = 'badge-safe';
+
+      const header = `<div style="display:flex;align-items:center;gap:10px;justify-content:space-between;margin-bottom:8px;"><div style="font-weight:700;color:var(--muted);">Phishing Catcher</div><div class="ai-badge ${badgeCls}" style="font-size:12px;padding:6px 10px;">${category}</div></div>`;
+      let body = row('Score', `${score}/100`, (category === 'SAFE' || category === 'Benign') ? 'ok' : category === 'Suspicious' ? 'bad' : 'warn');
+      if (parsed.feed_listed) {
+        const src = parsed.feed_source === 'openphish' ? 'OpenPhish' : 'PhishTank';
+        body += row('Threat feed', `Listed on ${src}`, 'bad');
+      } else if (parsed.feed_related) {
+        const src = parsed.feed_source === 'openphish' ? 'OpenPhish' : 'PhishTank';
+        body += row('Threat feed', `Related ${src} entries on domain`, 'warn');
+      }
+      if (parsed.heuristic_score !== undefined && parsed.heuristic_score !== score) {
+        body += row('Heuristic only', `${parsed.heuristic_score}/100`);
+      } else if (parsed.raw_score !== undefined && parsed.raw_score !== score) {
+        body += row('Raw heuristic', `${parsed.raw_score}/100 (before context)`);
+      }
+      if (parsed.registered_domain) body += row('Registered domain', parsed.registered_domain);
+      body += '<hr class="dl">' + row('Summary', summary);
+      if (parsed.reasons && parsed.reasons.length) {
+        body += '<hr class="dl">' + parsed.reasons.map(r => `<div class="ai-tip"><span>→</span>${r}</div>`).join('');
+      }
+      document.getElementById('phishingResult').innerHTML = header + body;
+    } else {
+      _displayToolOutput('phishingResult', 'Phishing Catcher', d);
+    }
+  } catch(e) {
+    document.getElementById('phishingResult').innerHTML = `<span class="error-msg">△ Error: ${e.message}</span>`;
+  }
+}
+
+async function showAiVerdict(url) {
+  const card = document.getElementById('aiVerdict');
+  card.className = 'ai-card visible';
+  document.getElementById('verdictBody').innerHTML = '<div class="loading-line"><div class="spinner"></div>AI is analyzing the URL…</div>';
+  document.getElementById('verdictBadge').textContent = '…';
+  document.getElementById('verdictTitle').textContent = 'Analyzing…';
+  document.getElementById('verdictScore').textContent = '—';
+  document.getElementById('verdictTips').innerHTML = '';
+  try {
+    const res = await fetch(`${API}/api/ai-verdict`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url })
+    });
+    const d = await res.json();
+    if (!d.success) throw new Error(d.error || 'AI request failed');
+    applyVerdict(d.verdict, d.score, d.summary, d.tips);
+  } catch(e) {
+    applyVerdict('WARNING', 50, 'AI analysis is currently unavailable. Please review the tool results below manually.', ['Check domain age in WHOIS — newly registered domains are suspicious.', 'Look for HTTPS and a valid SSL certificate.', 'Be cautious of URLs that mimic well-known brands.']);
+  }
+}
+
+function applyVerdict(verdict, score, summary, tips) {
+  const map = {
+    SAFE: {cls:'safe', badgeCls:'badge-safe', scoreClass:'safe', iconHtml:'<span class="ai-emoji green">✓</span>', label:'This URL appears safe'},
+    WARNING: {cls:'warning', badgeCls:'badge-warn', scoreClass:'warning', iconHtml:'<span class="ai-emoji orange">△</span>', label:'Proceed with caution'},
+    DANGER: {cls:'danger', badgeCls:'badge-danger', scoreClass:'danger', iconHtml:'<span class="ai-emoji red">▲</span>', label:'Potential phishing threat detected'}
+  };
+  const v = map[verdict] || map['WARNING'];
+  document.getElementById('aiVerdict').className = `ai-card visible ${v.cls}`;
+  document.getElementById('verdictBadge').className = `ai-badge ${v.badgeCls}`;
+  document.getElementById('verdictBadge').textContent = verdict;
+  document.getElementById('verdictTitle').innerHTML = `${v.iconHtml} ${v.label}`;
+  document.getElementById('verdictScore').className = `ai-score ${v.scoreClass}`;
+  document.getElementById('verdictScore').textContent = `Risk: ${score}/100`;
+  document.getElementById('verdictBody').textContent = summary;
+  if (tips?.length) {
+    document.getElementById('verdictTips').innerHTML =
+      `<div style="margin-top:12px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:7px;font-family:'JetBrains Mono',monospace;">Security Tips</div>` +
+      tips.map(t => `<div class="ai-tip"><span>→</span>${t}</div>`).join('');
+  }
+}
+
+async function showAiSummary(url) {
+  const card = document.getElementById('summaryCard');
+  card.className = 'summary-card visible';
+  document.getElementById('summaryBody').innerHTML = '<div class="loading-line"><div class="spinner"></div>AI is generating a comprehensive security summary…</div>';
+  try {
+    const whois = document.getElementById('whoisResult').innerText;
+    const ns    = document.getElementById('nslookupResult').innerText;
+    const nmap  = document.getElementById('nmapResult').innerText;
+    const ssl   = document.getElementById('sslResult').innerText;
+    const sooty = document.getElementById('sootyResult').innerText;
+    const phishing = document.getElementById('phishingResult').innerText;
+    const res = await fetch(`${API}/api/ai-summary`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url, whois, nslookup: ns, nmap, ssl, sooty, phishing })
+    });
+    const d = await res.json();
+    if (!d.success) throw new Error(d.error || 'AI summary failed');
+    document.getElementById('summaryBody').textContent = d.summary;
+  } catch(e) {
+    document.getElementById('summaryBody').textContent = 'AI summary unavailable. Please review the individual tool results above for your security assessment.';
+  }
+}
+
+async function runTool(tool) {
+  const url = getUrl();
+  if (!url) { alert('Please enter a URL first.'); return; }
+  const btnId = {whois:'whoisBtn', nslookup:'nslookupBtn', nmap:'nmapBtn', ssl:'sslBtn', sooty:'sootyBtn', phishing:'phishingBtn'}[tool];
+  const btn = document.getElementById(btnId);
+  btn.disabled = true; btn.textContent = '…';
+  if (tool==='whois')   await runWhois(url);
+  if (tool==='nslookup') await runNslookup(url);
+  if (tool==='nmap')    await runNmap(url);
+  if (tool==='ssl')     await runSsl(url);
+  if (tool==='sooty') await runSooty(url);
+  if (tool==='phishing') await runPhishingCatcher(url);
+  btn.disabled = false; btn.textContent = 'Run';
+}
+
+async function runAll() {
+  const url = getUrl();
+  if (!url) { alert('Please enter a URL to analyze.'); return; }
+  const btn = document.getElementById('analyzeBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner" style="border-color:#1e3a6e;border-top-color:#fff"></div> Analyzing…';
+  ['whoisBtn','nslookupBtn','nmapBtn','sslBtn','sootyBtn','phishingBtn'].forEach(id => {
+    document.getElementById(id).disabled = true;
+    document.getElementById(id).textContent = '…';
+  });
+  await Promise.all([
+    showAiVerdict(url),
+    runWhois(url),
+    runNslookup(url),
+    runNmap(url),
+    runSsl(url),
+    runSooty(url),
+    runPhishingCatcher(url)
+  ]);
+  await showAiSummary(url);
+  btn.disabled = false;
+  btn.innerHTML = '<span class="ai-emoji blue">◉</span> Analyze';
+  ['whoisBtn','nslookupBtn','nmapBtn','sslBtn','sootyBtn','phishingBtn'].forEach(id => {
+    document.getElementById(id).disabled = false;
+    document.getElementById(id).textContent = 'Run';
+  });
+}
+
+function clearAll() {
+  document.getElementById('urlInput').value = '';
+  document.getElementById('aiVerdict').className = 'ai-card';
+  document.getElementById('summaryCard').className = 'summary-card';
+  ['whoisResult','nslookupResult','nmapResult','sslResult','sootyResult','phishingResult'].forEach(id => {
+    document.getElementById(id).innerHTML = '<span class="placeholder">Enter a URL above and click Analyze or Run.</span>';
+  });
+}
+
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.1 });
+document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>

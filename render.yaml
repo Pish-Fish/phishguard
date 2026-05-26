@@ -1,0 +1,17 @@
+# Render Blueprint — deploy from Dashboard: New > Blueprint > connect repo
+# Or: render deploy (CLI)
+services:
+  - type: web
+    name: phishguard
+    runtime: docker
+    plan: starter
+    healthCheckPath: /
+    envVars:
+      - key: NMAP_PATH
+        value: /usr/bin/nmap
+      - key: GUNICORN_TIMEOUT
+        value: "900"
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: PHISHTANK_APP_NAME
+        value: PhishGuard
